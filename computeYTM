@@ -1,0 +1,45 @@
+#include <iostream>
+#include <vector>
+#include <cmath>
+
+double bondPrice(double faceValue, double coupon, double rate, int years) {
+    double price = 0.0;
+    for (int t = 1; t <= years; ++t) {
+        price += coupon / std::pow(1 + rate, t);
+    }
+    price += faceValue / std::pow(1 + rate, years);
+    return price;
+}
+
+double computeYTM(const double mktPrice, const double faceValue, const double coupon, const int years, const double initialGuess = 0.05, const double tolerance = 1e-6) {
+    double rate = initialGuess;
+    double delta = 1.0;
+
+    while (std::fabs(delta) > tolerance) {
+        const double price = bondPrice(faceValue, coupon, rate, years);
+        double derivative = 0.0;
+
+        for (int t = 1; t <= years; ++t) {
+            derivative -= t * coupon / std::pow(1 + rate, t + 1);
+        }
+        derivative -= years * faceValue / std::pow(1 + rate, years + 1);
+
+        if (std::fabs(derivative) < tolerance) break; // Avoid division by zero
+        delta = (mktPrice - price) / derivative;
+        rate += delta;
+    }
+
+    return rate;
+}
+
+int main() {
+    const double P = 950.0;  // Market bond price
+    const double F = 1000.0; // Face value
+    const double C = 50.0;   // Annual coupon payment
+    const int T = 10;        // Maturity period
+
+    const double YTM = computeYTM(P, F, C, T);
+    std::cout << "Bond Yield (YTM): " << YTM * 100 << "%" << std::endl;
+
+    return 0;
+}
