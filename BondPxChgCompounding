@@ -1,0 +1,71 @@
+/*
+A 3 year bond with a face value of $100 makes annual coupon payments of 10%. The current interest rate
+(with continous compounding) is 9%.
+1. Calculate the bond’s price, yield to maturity, duration and convexity.
+2. Suppose the interest rate falls to 8%. Estimate the new bond price using duration, and compare with
+the actual bond price using the correct interest rate.
+*/
+#include <iostream>
+#include <cmath>
+
+double bondPrice(const double faceValue, const double coupon, const double rate, const int years) {
+    double price = 0.0;
+    for (int t = 1; t <= years; ++t) {
+        price += coupon * std::exp(-rate * t);
+    }
+    price += faceValue * std::exp(-rate * years);
+    return price;
+}
+
+double bondDuration(const double faceValue, const double coupon, const double rate, const int years) {
+    double price = bondPrice(faceValue, coupon, rate, years);
+    double duration = 0.0;
+
+    for (int t = 1; t <= years; ++t) {
+        duration += t * (coupon * std::exp(-rate * t));
+    }
+    duration += years * (faceValue * std::exp(-rate * years));
+
+    return duration / price;
+}
+
+double bondConvexity(const double faceValue, const double coupon, const double rate, const int years) {
+    double price = bondPrice(faceValue, coupon, rate, years);
+    double convexity = 0.0;
+
+    for (int t = 1; t <= years; ++t) {
+        convexity += coupon * std::pow(t,2) * std::exp(-rate * t);
+    }
+    convexity += faceValue * std::pow(years,2) * std::exp(-rate * years);
+
+    return convexity / price;
+}
+
+double bondPriceChange(const double faceValue, const double coupon, const double rate, const int years, const double deltaRate) {
+    const double price = bondPrice(faceValue, coupon, rate, years);
+    const double duration = bondDuration(faceValue, coupon, rate, years);
+    const double convexity = bondConvexity(faceValue, coupon, rate, years);
+
+    const double pctChange = -duration * deltaRate + 0.5 * convexity * std::pow(deltaRate, 2);
+    return price * pctChange;
+}
+
+int main() {
+    const double F = 100.0;
+    const double C = 10.0;
+    const double r = 0.09;
+    const int T = 3;
+    const double delta_r = -0.01;  // 1% interest rate change
+
+    const double B = bondPrice(F, C, r, T);
+    const double D = bondDuration(F, C, r, T);
+    const double Cx = bondConvexity(F, C, r, T);
+    const double priceChange = bondPriceChange(F, C, r, T, delta_r);
+
+    std::cout << "Bond Price : " << B << std::endl;
+    std::cout << "Bond Duration : " << D << std::endl;
+    std::cout << "Bond Convexity : " << Cx << std::endl;
+    std::cout << "Estimated Bond Price Change: " << priceChange << std::endl;
+
+    return 0;
+}
